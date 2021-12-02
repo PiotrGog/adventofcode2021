@@ -57,6 +57,30 @@ fn get_final_position_following_movements(data: &Vec<Movement>) -> Position {
     )
 }
 
+fn get_final_position_following_aim(data: &Vec<Movement>) -> Position {
+    let mut aim = 0;
+    data.iter().fold(
+        Position {
+            horizontal: 0,
+            depth: 0,
+        },
+        |position, movement| match movement {
+            Movement::Forward(val) => Position {
+                horizontal: position.horizontal + val,
+                depth: position.depth + aim * val,
+            },
+            Movement::Down(val) => {
+                aim += val;
+                position
+            }
+            Movement::Up(val) => {
+                aim -= val;
+                position
+            }
+        },
+    )
+}
+
 fn load_data(file_name: &str) -> Vec<Movement> {
     let file = File::open(file_name).expect(&format!("Can't read file {}", file_name));
     let file = BufReader::new(file);
@@ -75,14 +99,27 @@ fn part_1_result(file_name: &str) {
     );
 }
 
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    let final_position = get_final_position_following_aim(&data);
+    println!(
+        "Part 2. Result: {}",
+        final_position.horizontal * final_position.depth
+    );
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{get_final_position_following_movements, load_data, Position};
+    use crate::{
+        get_final_position_following_aim, get_final_position_following_movements, load_data,
+        Position,
+    };
 
     #[test]
     fn part_1_test_data() {
@@ -93,6 +130,19 @@ mod tests {
             Position {
                 horizontal: 15,
                 depth: 10
+            }
+        );
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+        assert_eq!(
+            get_final_position_following_aim(&data),
+            Position {
+                horizontal: 15,
+                depth: 60
             }
         );
     }
