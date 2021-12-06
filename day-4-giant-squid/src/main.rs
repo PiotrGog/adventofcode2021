@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fmt::Debug,
     fs::File,
     io::{BufRead, BufReader},
@@ -8,7 +9,7 @@ const BOARD_SIZE: usize = 5;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Board {
-    id: u32,
+    id: usize,
     board: [[u32; BOARD_SIZE]; BOARD_SIZE],
     value_drawn: [[bool; BOARD_SIZE]; BOARD_SIZE],
 }
@@ -116,7 +117,7 @@ fn load_data(file_name: &str) -> Data {
     Data { numbers, boards }
 }
 
-fn play(data: &mut Data) -> Option<(usize, u32)> {
+fn get_first_winning(data: &mut Data) -> Option<(usize, u32)> {
     for number_to_check in &data.numbers {
         for (id, board) in data.boards.iter_mut().enumerate() {
             if let Some(idx) = board.get_value_idx(*number_to_check) {
@@ -130,11 +131,44 @@ fn play(data: &mut Data) -> Option<(usize, u32)> {
     None
 }
 
+fn get_last_winning(data: &mut Data) -> Option<(usize, u32)> {
+    let mut boards_to_check = (0..data.boards.len()).collect::<HashSet<_>>();
+    for number_to_check in &data.numbers {
+        let mut numbers_to_remove = vec![];
+
+        for board_to_check in &boards_to_check {
+            let board = &mut data.boards[*board_to_check];
+            if let Some(idx) = board.get_value_idx(*number_to_check) {
+                board.set_as_drawn(idx);
+                if board.check_row(idx.0) || board.check_column(idx.1) {
+                    numbers_to_remove.push(board.id);
+                    if boards_to_check.len() == 1 {
+                        return Some((board.id, *number_to_check));
+                    }
+                }
+            }
+        }
+        for number_to_remove in numbers_to_remove {
+            boards_to_check.remove(&number_to_remove);
+        }
+    }
+    None
+}
+
 fn part_1_result(file_name: &str) {
     let mut data = load_data(file_name);
-    let (board_id, last_number) = play(&mut data).unwrap();
+    let (board_id, last_number) = get_first_winning(&mut data).unwrap();
     println!(
         "Part 1. Result: {}",
+        last_number * data.boards[board_id].calculate_score().0
+    );
+}
+
+fn part_2_result(file_name: &str) {
+    let mut data = load_data(file_name);
+    let (board_id, last_number) = get_last_winning(&mut data).unwrap();
+    println!(
+        "Part 2. Result: {}",
         last_number * data.boards[board_id].calculate_score().0
     );
 }
@@ -142,16 +176,24 @@ fn part_1_result(file_name: &str) {
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{load_data, play};
+    use crate::{get_first_winning, get_last_winning, load_data};
 
     #[test]
     fn part_1_test_data() {
         const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
         let mut data = load_data(TEST_DATA_FILENAME);
-        assert_eq!(play(&mut data), Some((2, 24)));
+        assert_eq!(get_first_winning(&mut data), Some((2, 24)));
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let mut data = load_data(TEST_DATA_FILENAME);
+        assert_eq!(get_last_winning(&mut data), Some((1, 13)));
     }
 }
