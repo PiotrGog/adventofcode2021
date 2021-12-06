@@ -73,6 +73,22 @@ fn get_dangerous_points_coords(data: &Vec<Line>) -> HashMap<(usize, usize), usiz
                 let count = points_counter.entry((x, point1.y)).or_insert(0);
                 *count += 1;
             }
+        } else {
+            let is_growing =
+                (point1.x as i64 - point2.x as i64) * (point1.y as i64 - point2.y as i64) > 0;
+            for (x, y) in (min(point1.x, point2.x)..=max(point1.x, point2.x)).zip(if is_growing {
+                (min(point1.y, point2.y)..=max(point1.y, point2.y))
+                    .collect::<Vec<_>>()
+                    .into_iter()
+            } else {
+                (min(point1.y, point2.y)..=max(point1.y, point2.y))
+                    .rev()
+                    .collect::<Vec<_>>()
+                    .into_iter()
+            }) {
+                let count = points_counter.entry((x, y)).or_insert(0);
+                *count += 1;
+            }
         }
     }
 
@@ -96,9 +112,16 @@ fn part_1_result(file_name: &str) {
     println!("Part 1. Result: {}", count_points_with_counter(&data, 2));
 }
 
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    let data = get_dangerous_points_coords(&data);
+    println!("Part 2. Result: {}", count_points_with_counter(&data, 2));
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
@@ -118,5 +141,13 @@ mod tests {
             .collect::<Vec<_>>();
         let data = get_dangerous_points_coords(&data);
         assert_eq!(count_points_with_counter(&data, 2), 5);
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+        let data = get_dangerous_points_coords(&data);
+        assert_eq!(count_points_with_counter(&data, 2), 12);
     }
 }
