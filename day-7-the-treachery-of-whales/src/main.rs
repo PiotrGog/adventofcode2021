@@ -42,20 +42,35 @@ fn one_move_one_fuel_cost_function(crab_postiion: usize, desire_postion: usize) 
     (crab_postiion as i64 - desire_postion as i64).abs() as usize
 }
 
+fn next_move_one_fuel_more_cost_function(crab_postiion: usize, desire_postion: usize) -> usize {
+    (1..=(crab_postiion as i64 - desire_postion as i64).abs() as usize).sum()
+}
+
 fn part_1_result(file_name: &str) {
     let data = load_data(file_name);
     let result = find_position_to_align_crabs(&data, one_move_one_fuel_cost_function).unwrap();
     println!("Part 1. Result position: {}, fuel: {}", result.0, result.1);
 }
 
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    let result =
+        find_position_to_align_crabs(&data, next_move_one_fuel_more_cost_function).unwrap();
+    println!("Part 2. Result position: {}, fuel: {}", result.0, result.1);
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{find_position_to_align_crabs, load_data, one_move_one_fuel_cost_function};
+    use crate::{
+        find_position_to_align_crabs, load_data, next_move_one_fuel_more_cost_function,
+        one_move_one_fuel_cost_function,
+    };
 
     #[test]
     fn part_1_test_data() {
@@ -64,6 +79,16 @@ mod tests {
         assert_eq!(
             find_position_to_align_crabs(&data, one_move_one_fuel_cost_function),
             Some((2, 37))
+        );
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+        assert_eq!(
+            find_position_to_align_crabs(&data, next_move_one_fuel_more_cost_function),
+            Some((5, 168))
         );
     }
 }
