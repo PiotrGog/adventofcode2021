@@ -3,8 +3,10 @@ use std::{
     io::{BufRead, BufReader},
     str::FromStr,
     string::ParseError,
+    u32,
 };
 
+#[derive(Debug, PartialEq, Clone)]
 struct BinaryNumber(Vec<u8>);
 
 impl FromStr for BinaryNumber {
@@ -19,10 +21,25 @@ impl FromStr for BinaryNumber {
     }
 }
 
+impl From<BinaryNumber> for u32 {
+    fn from(binary_number: BinaryNumber) -> Self {
+        binary_number
+            .0
+            .iter()
+            .fold(0, |acc, val| (acc << 1) | (*val as u32))
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 struct Rates {
     gamma: u32,
     epsilon: u32,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+struct RatesOxygenAndCO2 {
+    oxygen: u32,
+    co2: u32,
 }
 
 fn count_ones(data: &Vec<BinaryNumber>) -> Vec<u32> {
@@ -57,6 +74,46 @@ fn get_rates(data: &Vec<u32>, binary_numbers: usize) -> Rates {
     Rates { gamma, epsilon }
 }
 
+fn get_oxygen_and_co2_ratting(binary_numbers: Vec<BinaryNumber>) -> RatesOxygenAndCO2 {
+    let mut binary_numbers_for_oxygen = binary_numbers.clone();
+    let mut binary_numbers_for_co2 = binary_numbers.clone();
+    for i in 0..binary_numbers[0].0.len() {
+        if binary_numbers_for_oxygen.len() > 1 {
+            let numbers_for_oxygen = binary_numbers_for_oxygen.len();
+            let counted_ones = count_ones(&binary_numbers_for_oxygen)[i];
+            binary_numbers_for_oxygen = binary_numbers_for_oxygen
+                .into_iter()
+                .filter(|val| {
+                    if (counted_ones * 2) as usize >= numbers_for_oxygen {
+                        val.0[i] == 1
+                    } else {
+                        val.0[i] == 0
+                    }
+                })
+                .collect();
+        }
+        if binary_numbers_for_co2.len() > 1 {
+            let numbers_of_co2 = binary_numbers_for_co2.len();
+            let counted_ones = count_ones(&binary_numbers_for_co2)[i];
+            binary_numbers_for_co2 = binary_numbers_for_co2
+                .into_iter()
+                .filter(|val| {
+                    if (counted_ones * 2) as usize >= numbers_of_co2 {
+                        val.0[i] == 0
+                    } else {
+                        val.0[i] == 1
+                    }
+                })
+                .collect();
+        }
+    }
+
+    RatesOxygenAndCO2 {
+        oxygen: u32::from(binary_numbers_for_oxygen[0].clone()),
+        co2: u32::from(binary_numbers_for_co2[0].clone()),
+    }
+}
+
 fn load_data(file_name: &str) -> Vec<BinaryNumber> {
     let file = File::open(file_name).expect(&format!("Can't read file {}", file_name));
     let file = BufReader::new(file);
@@ -73,26 +130,47 @@ fn part_1_result(file_name: &str) {
     println!("Part 1. Result: {}", rates.gamma * rates.epsilon);
 }
 
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    let rates = get_oxygen_and_co2_ratting(data);
+    println!("Part 2. Result: {}", rates.oxygen * rates.co2);
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{count_ones, get_rates, load_data, Rates};
+    use crate::{
+        count_ones, get_oxygen_and_co2_ratting, get_rates, load_data, Rates, RatesOxygenAndCO2,
+    };
 
     #[test]
     fn part_1_test_data() {
         const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
         let data = load_data(TEST_DATA_FILENAME);
         let counted_ones = count_ones(&data);
-        println!("{:?}", counted_ones);
         assert_eq!(
             get_rates(&counted_ones, data.len()),
             Rates {
                 gamma: 22,
                 epsilon: 9
+            }
+        );
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+        assert_eq!(
+            get_oxygen_and_co2_ratting(data),
+            RatesOxygenAndCO2 {
+                oxygen: 23,
+                co2: 10
             }
         );
     }
