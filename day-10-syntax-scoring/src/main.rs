@@ -7,10 +7,10 @@ use std::{
 
 type Line = Vec<char>;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 enum LineState {
     Correct,
-    Incomplete,
+    Incomplete(Line),
     Corrupted(char)
 }
 
@@ -43,7 +43,9 @@ fn classify_lines(data: &Vec<Line>) -> Vec<LineState> {
             }
         }
 
-        if state.is_empty() { LineState::Correct } else { LineState::Incomplete }
+        if state.is_empty() { LineState::Correct } else { LineState::Incomplete(
+            state.into_iter().map(|c| opening_to_clossing_chars[c]).collect()
+        ) }
     }).collect()
 }
 
@@ -55,6 +57,18 @@ fn score_symbol(c: char) -> usize {
         '>' => 25137,
         _ => panic!("Invalid corrupted symbol")
     }
+}
+
+fn score_line_closure(line: &Line) -> usize {
+    line.iter().fold(0, |acc, c| {
+        acc * 5 + match c {
+            ')' => 1,
+            ']' => 2,
+            '}' => 3,
+            '>' => 4,
+            _ => panic!("Invalid corrupted symbol")
+        }
+    })
 }
 
 fn part_1_result(file_name: &str) {
@@ -71,14 +85,32 @@ fn part_1_result(file_name: &str) {
     );
 }
 
+
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    let mut scored_incomplete_lines = classify_lines(&data).iter().filter_map(|line_state| {
+        if let LineState::Incomplete(line) = line_state {
+            Some(score_line_closure(line))
+        } else {
+            None
+        }
+    }).collect::<Vec<_>>();
+    scored_incomplete_lines.sort_by(|a, b| b.cmp(a));
+    println!(
+        "Part 2. Result: {}",
+        scored_incomplete_lines[scored_incomplete_lines.len()/2]
+    );
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{load_data, classify_lines, LineState, score_symbol};
+    use crate::{load_data, classify_lines, LineState, score_symbol, score_line_closure};
 
     #[test]
     fn part_1_test_data() {
@@ -97,5 +129,20 @@ mod tests {
             }).sum::<usize>(),
             26397
         );
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+        let mut scored_incomplete_lines = classify_lines(&data).iter().filter_map(|line_state| {
+            if let LineState::Incomplete(line) = line_state {
+                Some(score_line_closure(line))
+            } else {
+                None
+            }
+        }).collect::<Vec<_>>();
+        scored_incomplete_lines.sort_by(|a, b| b.cmp(a));
+        assert_eq!(scored_incomplete_lines[scored_incomplete_lines.len()/2], 288957);
     }
 }
