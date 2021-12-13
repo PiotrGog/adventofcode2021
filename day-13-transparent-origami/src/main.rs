@@ -67,6 +67,22 @@ fn fold(dots: HashSet<(usize, usize)>, fold: Fold) -> HashSet<(usize, usize)> {
     }
 }
 
+fn print_origami_result(dots: &HashSet<(usize, usize)>) {
+    let (mut max_x, mut max_y) = (0, 0);
+
+    for (x, y) in dots {
+        max_x = max_x.max(*x);
+        max_y = max_y.max(*y);
+    }
+
+    let mut result_code = vec![vec![' '; max_x + 1]; max_y + 1];
+    for (x, y) in dots {
+        result_code[*y][*x] = '#';
+    }
+
+    result_code.into_iter().for_each(|x| println!("{:?}", x));
+}
+
 fn part_1_result(file_name: &str) {
     let data = load_data(file_name);
     println!(
@@ -75,9 +91,20 @@ fn part_1_result(file_name: &str) {
     );
 }
 
+fn part_2_result(file_name: &str) {
+    let (dots, folds) = load_data(file_name);
+    let dots = folds
+        .into_iter()
+        .fold(dots, |dots, fold_instruction| fold(dots, fold_instruction));
+
+    println!("Part 2. Result:");
+    print_origami_result(&dots);
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
