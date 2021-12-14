@@ -36,52 +36,118 @@ fn load_data(file_name: &str) -> HashMap<String, HashSet<String>> {
     result
 }
 
-fn find_paths(data: HashMap<String, HashSet<String>>) -> Vec<Vec<String>> {
+fn find_paths(
+    data: HashMap<String, HashSet<String>>,
+    max_visit_small_caves: usize,
+) -> Vec<Vec<String>> {
     fn rec_find_path(
         stop: String,
         data: HashMap<String, HashSet<String>>,
         current_paths: Vec<Vec<String>>,
+        visited_small_caves: usize,
     ) -> Vec<Vec<String>> {
-        let mut paths = vec![];
+        let mut paths = HashSet::new();
 
         for path in current_paths {
             let last_point = path.last().unwrap();
             if *last_point == stop {
-                paths.push(path)
+                paths.insert(path);
             } else {
                 let mut data_copy = data.clone();
-                if last_point.to_lowercase() == *last_point {
+                let mut copy_visited_small_caves = visited_small_caves;
+                if last_point == "start" {
                     data_copy.remove(last_point);
-                }
-                if let Some(points) = data.get(last_point) {
+                    if let Some(points) = data.get(last_point) {
+                        for point in points {
+                            let mut new_path = path.clone();
+                            new_path.push(point.clone());
+                            paths.extend(rec_find_path(
+                                stop.clone(),
+                                data_copy.clone(),
+                                vec![new_path],
+                                copy_visited_small_caves,
+                            ));
+                        }
+                    }
+                } else if last_point.to_lowercase() == *last_point {
+                    if copy_visited_small_caves <= 1 {
+                        data_copy.remove(last_point);
+                        if let Some(points) = data.get(last_point) {
+                            for point in points {
+                                let mut new_path = path.clone();
+                                new_path.push(point.clone());
+                                paths.extend(rec_find_path(
+                                    stop.clone(),
+                                    data_copy.clone(),
+                                    vec![new_path],
+                                    copy_visited_small_caves,
+                                ));
+                            }
+                        }
+                    } else {
+                        copy_visited_small_caves -= 1;
+                        data_copy.remove(last_point);
+                        if let Some(points) = data.get(last_point) {
+                            for point in points {
+                                let mut new_path = path.clone();
+                                new_path.push(point.clone());
+                                paths.extend(rec_find_path(
+                                    stop.clone(),
+                                    data.clone(),
+                                    vec![new_path.clone()],
+                                    copy_visited_small_caves,
+                                ));
+                                paths.extend(rec_find_path(
+                                    stop.clone(),
+                                    data_copy.clone(),
+                                    vec![new_path],
+                                    visited_small_caves,
+                                ));
+                            }
+                        }
+                    }
+                } else if let Some(points) = data.get(last_point) {
                     for point in points {
                         let mut new_path = path.clone();
                         new_path.push(point.clone());
-                        paths.append(&mut rec_find_path(
+                        paths.extend(rec_find_path(
                             stop.clone(),
                             data_copy.clone(),
                             vec![new_path],
+                            copy_visited_small_caves,
                         ));
                     }
                 }
             }
         }
 
-        paths
+        paths.into_iter().collect()
     }
 
-    rec_find_path("end".to_string(), data, vec![vec!["start".to_string()]])
+    rec_find_path(
+        "end".to_string(),
+        data,
+        vec![vec!["start".to_string()]],
+        max_visit_small_caves,
+    )
 }
 
 fn part_1_result(file_name: &str) {
     let data = load_data(file_name);
-    let paths = find_paths(data);
+    let paths = find_paths(data, 1);
     println!("Part 1. Result: {}", paths.len());
+}
+
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    let paths = find_paths(data, 2);
+    println!("Part 2. Result: {}", paths.len());
 }
 
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
@@ -157,7 +223,7 @@ mod tests {
             vec!["start".to_string(), "b".to_string(), "end".to_string()],
         ];
         expected.sort();
-        let mut actual = find_paths(data);
+        let mut actual = find_paths(data, 1);
 
         actual.sort();
         assert_eq!(actual, expected);
@@ -296,9 +362,335 @@ mod tests {
             ],
         ];
         expected.sort();
-        let mut actual = find_paths(data);
+        let mut actual = find_paths(data, 1);
 
         actual.sort();
         assert_eq!(actual, expected);
     }
+}
+
+#[test]
+fn part_2_a_test_data() {
+    const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+    let data = load_data(TEST_DATA_FILENAME);
+    let mut expected = vec![
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec!["start".to_string(), "A".to_string(), "end".to_string()],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "c".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "A".to_string(),
+            "end".to_string(),
+        ],
+        vec![
+            "start".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+            "b".to_string(),
+            "end".to_string(),
+        ],
+        vec!["start".to_string(), "b".to_string(), "end".to_string()],
+    ];
+    expected.sort();
+    let mut actual = find_paths(data, 2);
+    actual.sort();
+
+    assert_eq!(actual.len(), expected.len());
+    assert_eq!(actual, expected);
 }
