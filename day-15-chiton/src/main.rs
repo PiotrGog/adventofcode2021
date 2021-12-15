@@ -21,9 +21,10 @@ fn load_data(file_name: &str) -> RisksMap {
         .collect()
 }
 
-fn find_path_with_lowest_risk(data: &RisksMap) -> (Path, usize) {
-    let mut cache = vec![vec![std::usize::MAX / 2; data.len()]; data[0].len()];
-    let mut previous = vec![vec![None; data.len()]; data[0].len()];
+fn find_path_with_lowest_risk(data: &RisksMap, repeat_map: usize) -> (Path, usize) {
+    let mut cache =
+        vec![vec![std::usize::MAX / 2; data.len() * repeat_map]; data[0].len() * repeat_map];
+    let mut previous = vec![vec![None; data.len() * repeat_map]; data[0].len() * repeat_map];
 
     let adjacent = |x, y| {
         vec![
@@ -37,12 +38,12 @@ fn find_path_with_lowest_risk(data: &RisksMap) -> (Path, usize) {
             } else {
                 Some((x, y - 1))
             },
-            if x + 1 >= data.len() {
+            if x + 1 >= data.len() * repeat_map {
                 None
             } else {
                 Some((x + 1, y))
             },
-            if y + 1 >= data[0].len() {
+            if y + 1 >= data[0].len() * repeat_map {
                 None
             } else {
                 Some((x, y + 1))
@@ -53,12 +54,23 @@ fn find_path_with_lowest_risk(data: &RisksMap) -> (Path, usize) {
         .collect::<Path>()
     };
 
+    let normalize_adjacent = |x, y| (x % data.len(), y % data[0].len());
+
     cache[0][0] = 0;
-    for x in 0..data.len() {
-        for y in 0..data[0].len() {
+    for x in 0..data.len() * repeat_map {
+        for y in 0..data[0].len() * repeat_map {
             for (next_x, next_y) in adjacent(x, y) {
-                if cache[next_x][next_y] as i64 > cache[x][y] as i64 + data[next_x][next_y] as i64 {
-                    cache[next_x][next_y] = cache[x][y] + data[next_x][next_y];
+                let (normalized_x, normalized_y) = normalize_adjacent(next_x, next_y);
+                let risk_value = (data[normalized_x][normalized_y]
+                    + ((next_x / data.len()) + (next_y / data[0].len())))
+                    % 10;
+                // let risk_value = if risk_value > 9 { 1 } else { risk_value };
+                let risk_value = if risk_value == 0 { 1 } else { risk_value };
+                if next_x == 23 && next_y == 22 {
+                    println!("{} {} {}", next_x, next_y, risk_value);
+                }
+                if cache[next_x][next_y] as i64 > cache[x][y] as i64 + risk_value as i64 {
+                    cache[next_x][next_y] = cache[x][y] + risk_value;
                     previous[next_x][next_y] = Some((x, y));
                 }
             }
@@ -66,20 +78,23 @@ fn find_path_with_lowest_risk(data: &RisksMap) -> (Path, usize) {
     }
 
     let mut result = LinkedList::new();
-    let mut current_position = (data.len() - 1, data[0].len() - 1);
+    let mut current_position = (
+        (data.len() * repeat_map) - 1,
+        (data[0].len() * repeat_map) - 1,
+    );
     let risk = cache[current_position.0][current_position.1];
     result.push_front(current_position);
     while let Some(position) = previous[current_position.0][current_position.1] {
         result.push_front(position);
         current_position = position;
     }
-
+    println!("{:?}", cache);
     (result.into_iter().collect(), risk)
 }
 
 fn part_1_result(file_name: &str) {
     let data = load_data(file_name);
-    let (_, risk) = find_path_with_lowest_risk(&data);
+    let (_, risk) = find_path_with_lowest_risk(&data, 1);
     println!("Part 1. Result: {}", risk);
 }
 
@@ -96,7 +111,15 @@ mod tests {
     fn part_1_test_data() {
         const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
         let data = load_data(TEST_DATA_FILENAME);
-        let (_, risk) = find_path_with_lowest_risk(&data);
+        let (_, risk) = find_path_with_lowest_risk(&data, 1);
         assert_eq!(risk, 40);
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+        let (_, risk) = find_path_with_lowest_risk(&data, 5);
+        assert_eq!(risk, 315);
     }
 }
