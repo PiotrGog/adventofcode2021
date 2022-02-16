@@ -5,7 +5,7 @@ use std::{
     ops::RangeBounds,
 };
 
-type Octopuses = Vec<Vec<u8>>;
+type Octopuses = Vec<Vec<u32>>;
 
 fn load_data(file_name: &str) -> Octopuses {
     let file = File::open(file_name).expect(&format!("Can't read file {}", file_name));
@@ -14,13 +14,14 @@ fn load_data(file_name: &str) -> Octopuses {
         .map(|line| {
             line.unwrap()
                 .chars()
-                .map(|string_digit| string_digit.to_digit(10).unwrap() as u8)
+                .map(|string_digit| string_digit.to_digit(10).unwrap() as u32)
                 .collect()
         })
         .collect()
 }
 
-fn iterate(octopuses: Octopuses) -> Octopuses {
+fn iterate(octopuses: Octopuses) -> (Octopuses, u32) {
+    // println!("1. {:?}", octopuses);
     let mut octopuses: Octopuses = octopuses
         .into_iter()
         .map(|octopuses_row| {
@@ -30,37 +31,42 @@ fn iterate(octopuses: Octopuses) -> Octopuses {
                 .collect()
         })
         .collect();
+    // println!("2. {:?}", octopuses);
+
 
     let mut to_flash = VecDeque::new();
+    let mut initial_flash = HashSet::new();
     for (x, octopuses_row) in octopuses.iter().enumerate() {
         for (y, octopus) in octopuses_row.iter().enumerate() {
             if *octopus > 9 {
                 to_flash.push_back((x, y));
+                initial_flash.insert((x, y));
             }
         }
     }
 
     let mut flashed = HashSet::new();
+    // println!("Flashed {:?}", to_flash);
     while let Some(cords) = to_flash.pop_front() {
         flashed.insert(cords);
         for x in 0..=2 {
             for y in 0..=2 {
+                // println!("x, y {} {}", x, y);
                 let x_to_check = (cords.0 + x) as i32 - 1;
                 let y_to_check = (cords.1 + y) as i32 - 1;
-                if x_to_check < 0
-                    || y_to_check < 0
-                    || x_to_check >= octopuses.len() as i32
-                    || y_to_check >= octopuses.len() as i32
-                    || x_to_check == cords.0 as i32
-                    || y_to_check == cords.1 as i32
+                if x_to_check >= 0
+                    && y_to_check >= 0
+                    && x_to_check < octopuses.len() as i32
+                    && y_to_check < octopuses.len() as i32
+                    && (x_to_check != cords.0 as i32 || y_to_check != cords.1 as i32)
                 {
-                    continue;
-                } else {
                     let x_to_check = x_to_check as usize;
                     let y_to_check = y_to_check as usize;
+                    // println!("To check {} {}", x_to_check, y_to_check);
                     octopuses[x_to_check][y_to_check] += 1;
                     if octopuses[x_to_check][y_to_check] > 9
                         && !flashed.contains(&(x_to_check, y_to_check))
+                        && !initial_flash.contains(&(x_to_check, y_to_check))
                     {
                         to_flash.push_back((x_to_check, y_to_check));
                     }
@@ -68,16 +74,19 @@ fn iterate(octopuses: Octopuses) -> Octopuses {
             }
         }
     }
+    // println!("3. {:?}", octopuses);
 
-    for (x, octopuses_row) in octopuses.iter_mut().enumerate() {
-        for (y, octopus) in octopuses_row.iter_mut().enumerate() {
+    let mut flashes = 0;
+    for (_, octopuses_row) in octopuses.iter_mut().enumerate() {
+        for (_, octopus) in octopuses_row.iter_mut().enumerate() {
             if *octopus > 9 {
                 *octopus = 0;
+                flashes += 1;
             }
         }
     }
 
-    octopuses
+    (octopuses, flashes)
 }
 
 fn main() {}
@@ -87,33 +96,72 @@ mod tests {
     use crate::{iterate, load_data};
 
     #[test]
-    fn part_1_test_data() {
-        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+    fn part_1_test_data_1() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data_1.txt";
         let data = load_data(TEST_DATA_FILENAME);
 
         let iteration_result = iterate(data.clone());
-        println!("{:?}", iteration_result);
+
         assert_eq!(
             iteration_result,
-            vec![
-                vec![3, 4, 5, 4, 3],
-                vec![4, 0, 0, 0, 4],
-                vec![5, 0, 0, 0, 5],
-                vec![4, 0, 0, 0, 4],
-                vec![3, 4, 5, 4, 3],
-            ]
+            (
+                vec![
+                    vec![3, 4, 5, 4, 3],
+                    vec![4, 0, 0, 0, 4],
+                    vec![5, 0, 0, 0, 5],
+                    vec![4, 0, 0, 0, 4],
+                    vec![3, 4, 5, 4, 3],
+                ],
+                9
+            )
         );
 
-        let iteration_result = iterate(iteration_result);
+        let iteration_result = iterate(iteration_result.0);
         assert_eq!(
             iteration_result,
-            vec![
-                vec![4, 5, 6, 5, 4],
-                vec![5, 1, 1, 1, 5],
-                vec![6, 1, 1, 1, 6],
-                vec![5, 1, 1, 1, 5],
-                vec![4, 5, 6, 5, 4],
-            ]
+            (
+                vec![
+                    vec![4, 5, 6, 5, 4],
+                    vec![5, 1, 1, 1, 5],
+                    vec![6, 1, 1, 1, 6],
+                    vec![5, 1, 1, 1, 5],
+                    vec![4, 5, 6, 5, 4],
+                ],
+                0
+            )
+        );
+    }
+
+    #[test]
+    fn part_1_test_data_2() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data_2.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+
+        let mut data = data;
+        let mut flashes = 0;
+        for _ in 0..100 {
+            let iteration_result = iterate(data);
+            data = iteration_result.0;
+            flashes += iteration_result.1;
+        }
+
+        assert_eq!(
+            (data, flashes),
+            (
+                vec![
+                    vec![0, 3, 9, 7, 6, 6, 6, 8, 6, 6],
+                    vec![0, 7, 4, 9, 7, 6, 6, 9, 1, 8],
+                    vec![0, 0, 5, 3, 9, 7, 6, 9, 3, 3],
+                    vec![0, 0, 0, 4, 2, 9, 7, 8, 2, 2],
+                    vec![0, 0, 0, 4, 2, 2, 9, 8, 9, 2],
+                    vec![0, 0, 5, 3, 2, 2, 2, 8, 7, 7],
+                    vec![0, 5, 3, 2, 2, 2, 2, 9, 6, 6],
+                    vec![9, 3, 2, 2, 2, 2, 8, 9, 6, 6],
+                    vec![7, 9, 2, 2, 2, 8, 6, 8, 6, 6],
+                    vec![6, 7, 8, 9, 9, 9, 8, 7, 6, 6],
+                ],
+                1656
+            )
         );
     }
 }
