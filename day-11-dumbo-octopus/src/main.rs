@@ -20,9 +20,8 @@ fn load_data(file_name: &str) -> Octopuses {
         .collect()
 }
 
-fn iterate(octopuses: Octopuses) -> (Octopuses, u32) {
-    // println!("1. {:?}", octopuses);
-    let mut octopuses: Octopuses = octopuses
+fn increase_energy_level_by_one(octopuses: Octopuses) -> Octopuses {
+    octopuses
         .into_iter()
         .map(|octopuses_row| {
             octopuses_row
@@ -30,10 +29,10 @@ fn iterate(octopuses: Octopuses) -> (Octopuses, u32) {
                 .map(|octopus| octopus + 1)
                 .collect()
         })
-        .collect();
-    // println!("2. {:?}", octopuses);
+        .collect()
+}
 
-
+fn iterative_flash(mut octopuses: Octopuses) -> (Octopuses, usize) {
     let mut to_flash = VecDeque::new();
     let mut initial_flash = HashSet::new();
     for (x, octopuses_row) in octopuses.iter().enumerate() {
@@ -46,12 +45,10 @@ fn iterate(octopuses: Octopuses) -> (Octopuses, u32) {
     }
 
     let mut flashed = HashSet::new();
-    // println!("Flashed {:?}", to_flash);
     while let Some(cords) = to_flash.pop_front() {
         flashed.insert(cords);
         for x in 0..=2 {
             for y in 0..=2 {
-                // println!("x, y {} {}", x, y);
                 let x_to_check = (cords.0 + x) as i32 - 1;
                 let y_to_check = (cords.1 + y) as i32 - 1;
                 if x_to_check >= 0
@@ -62,7 +59,6 @@ fn iterate(octopuses: Octopuses) -> (Octopuses, u32) {
                 {
                     let x_to_check = x_to_check as usize;
                     let y_to_check = y_to_check as usize;
-                    // println!("To check {} {}", x_to_check, y_to_check);
                     octopuses[x_to_check][y_to_check] += 1;
                     if octopuses[x_to_check][y_to_check] > 9
                         && !flashed.contains(&(x_to_check, y_to_check))
@@ -74,19 +70,23 @@ fn iterate(octopuses: Octopuses) -> (Octopuses, u32) {
             }
         }
     }
-    // println!("3. {:?}", octopuses);
 
-    let mut flashes = 0;
+    (octopuses, flashed.len())
+}
+
+fn iterate(octopuses: Octopuses) -> (Octopuses, usize) {
+    let octopuses = increase_energy_level_by_one(octopuses);
+    let (mut octopuses, flashed) = iterative_flash(octopuses);
+
     for (_, octopuses_row) in octopuses.iter_mut().enumerate() {
         for (_, octopus) in octopuses_row.iter_mut().enumerate() {
             if *octopus > 9 {
                 *octopus = 0;
-                flashes += 1;
             }
         }
     }
 
-    (octopuses, flashes)
+    (octopuses, flashed)
 }
 
 fn main() {}
