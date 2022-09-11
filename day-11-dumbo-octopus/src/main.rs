@@ -107,19 +107,44 @@ fn iterate_n_times(octopuses: Octopuses, times: usize) -> (Octopuses, usize) {
     (octopuses, flashes)
 }
 
+fn iteration_of_nth_simultaneousl_flash(octopuses: Octopuses, nth_flash: usize) -> usize {
+    let mut octopuses = octopuses;
+    let mut simultaneousl_flashes = 0;
+    let mut iteration = 0;
+    while simultaneousl_flashes != nth_flash {
+        iteration += 1;
+        let iteration_result = iterate(octopuses);
+        octopuses = iteration_result.0;
+        if iteration_result.1 == octopuses.len() * octopuses.len() {
+            simultaneousl_flashes += 1;
+        }
+    }
+
+    iteration
+}
+
 fn part_1_result(file_name: &str) {
     let data = load_data(file_name);
     println!("Part 1. Result: {}", iterate_n_times(data, 100).1,);
 }
 
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    println!(
+        "Part 2. Result: {}",
+        iteration_of_nth_simultaneousl_flash(data, 1),
+    );
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{iterate, iterate_n_times, load_data};
+    use crate::{iterate, iterate_n_times, iteration_of_nth_simultaneousl_flash, load_data};
 
     #[test]
     fn part_1_test_data_1() {
@@ -183,5 +208,15 @@ mod tests {
                 1656
             )
         );
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data_2.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+
+        let iterations = iteration_of_nth_simultaneousl_flash(data, 1);
+
+        assert_eq!(iterations, 195);
     }
 }
