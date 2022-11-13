@@ -66,8 +66,10 @@ fn get_adjacent(x: usize, y: usize, max_xy: usize) -> Vec<(usize, usize)> {
     .collect::<Vec<(usize, usize)>>()
 }
 
-fn find_path_with_lowest_risk(data: &RisksMap) -> Option<usize> {
-    let mut dist = vec![vec![std::usize::MAX; data.len()]; data[0].len()];
+fn find_path_with_lowest_risk(data: &RisksMap, times: usize) -> Option<usize> {
+    let cave_size = data.len() * times;
+
+    let mut dist = vec![vec![std::usize::MAX; cave_size]; cave_size];
 
     let mut remaining_nodes = BinaryHeap::new();
     remaining_nodes.push(Node {
@@ -76,7 +78,7 @@ fn find_path_with_lowest_risk(data: &RisksMap) -> Option<usize> {
     });
 
     while let Some(Node { risk, coordinates }) = remaining_nodes.pop() {
-        if coordinates == (data.len() - 1, data.len() - 1) {
+        if coordinates == (cave_size - 1, cave_size - 1) {
             return Some(risk);
         }
 
@@ -84,9 +86,12 @@ fn find_path_with_lowest_risk(data: &RisksMap) -> Option<usize> {
             continue;
         }
 
-        for adjecent in get_adjacent(coordinates.0, coordinates.1, data.len()) {
+        for adjecent in get_adjacent(coordinates.0, coordinates.1, cave_size) {
+            let base_risk = data[adjecent.0 % data.len()][adjecent.1 % data.len()];
+            let new_risk =
+                (base_risk + ((adjecent.0 / data.len()) + (adjecent.1 / data.len())) - 1) % 9 + 1;
             let new_node = Node {
-                risk: risk + data[adjecent.0][adjecent.1],
+                risk: risk + new_risk,
                 coordinates: adjecent,
             };
 
@@ -103,13 +108,20 @@ fn find_path_with_lowest_risk(data: &RisksMap) -> Option<usize> {
 
 fn part_1_result(file_name: &str) {
     let data = load_data(file_name);
-    let risk = find_path_with_lowest_risk(&data);
+    let risk = find_path_with_lowest_risk(&data, 1);
     println!("Part 1. Result: {}", risk.unwrap());
+}
+
+fn part_2_result(file_name: &str) {
+    let data = load_data(file_name);
+    let risk = find_path_with_lowest_risk(&data, 5);
+    println!("Part 2. Result: {}", risk.unwrap());
 }
 
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
@@ -120,7 +132,15 @@ mod tests {
     fn part_1_test_data() {
         const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
         let data = load_data(TEST_DATA_FILENAME);
-        let risk = find_path_with_lowest_risk(&data).unwrap();
+        let risk = find_path_with_lowest_risk(&data, 1).unwrap();
         assert_eq!(risk, 40);
+    }
+
+    #[test]
+    fn part_2_test_data() {
+        const TEST_DATA_FILENAME: &str = "./resources/test_data.txt";
+        let data = load_data(TEST_DATA_FILENAME);
+        let risk = find_path_with_lowest_risk(&data, 5).unwrap();
+        assert_eq!(risk, 315);
     }
 }
