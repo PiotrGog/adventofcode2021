@@ -129,12 +129,25 @@ fn part_1_result(min_x: i32, max_x: i32, min_y: i32, max_y: i32) {
     );
 }
 
+fn part_2_result(min_x: i32, max_x: i32, min_y: i32, max_y: i32) {
+    let target_area = Area {
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+    };
+    let simulator = Simulator { target_area };
+    let trajectories = simulator.find_all_matching_trajectories();
+    println!("Part 2. Result: {}", trajectories.len());
+}
+
 fn main() {
     const MIN_X: i32 = 240;
     const MAX_X: i32 = 292;
     const MIN_Y: i32 = -90;
     const MAX_Y: i32 = -57;
     part_1_result(MIN_X, MAX_X, MIN_Y, MAX_Y);
+    part_2_result(MIN_X, MAX_X, MIN_Y, MAX_Y);
 }
 
 #[cfg(test)]
@@ -200,5 +213,14 @@ mod tests {
         let trajectories = simulator.find_all_matching_trajectories();
         let maximal_y = get_maximal_y_from_trajectories(&trajectories);
         assert_eq!(maximal_y, 45);
+    }
+
+    #[test]
+    fn test_part_2() {
+        let simulator = Simulator {
+            target_area: TARGET_AREA,
+        };
+        let trajectories = simulator.find_all_matching_trajectories();
+        assert_eq!(trajectories.len(), 112);
     }
 }
