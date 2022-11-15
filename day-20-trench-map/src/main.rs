@@ -168,9 +168,23 @@ fn part_1_result(file_name: &str) {
     println!("Part 1. Result: {}", lit_pixels);
 }
 
+fn part_2_result(file_name: &str) {
+    let ImageWithEnhanceAlgorithm {
+        image,
+        enhance_algorithm: algorithm,
+    } = load_data(file_name);
+    let lit_pixels = image
+        .process_with_algorithm_n_times(&algorithm, 50)
+        .count_lit_pixels()
+        .unwrap();
+
+    println!("Part 2. Result: {}", lit_pixels);
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
