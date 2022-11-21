@@ -35,9 +35,20 @@ fn part_1_result(file_name: &str) {
     println!("Part 1. Result: {}", result);
 }
 
+fn part_2_result(file_name: &str) {
+    let initialization_procedure = load_data(file_name);
+    let result_cuboids = initialization_procedure.run(None);
+    let result = result_cuboids
+        .iter()
+        .fold(0, |sum, cuboid| sum + cuboid.count_cubes_on());
+
+    println!("Part 2. Result: {}", result);
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
@@ -94,5 +105,17 @@ mod tests {
             .iter()
             .fold(0, |sum, cuboid| sum + cuboid.count_cubes_on());
         assert_eq!(result, 590784);
+    }
+
+    #[test]
+    fn test_part_2() {
+        const TEST_FILE_PATH: &str = "./resources/test_data_2.txt";
+        let initialization_procedure = load_data(TEST_FILE_PATH);
+        let result_cuboids = initialization_procedure.run(None);
+
+        let result = result_cuboids
+            .iter()
+            .fold(0, |sum, cuboid| sum + cuboid.count_cubes_on());
+        assert_eq!(result, 2758514936282235);
     }
 }
