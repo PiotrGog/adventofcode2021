@@ -236,9 +236,29 @@ fn part_1_result(file_name: &str) {
     println!("Part 1. Result: {:?}", result);
 }
 
+fn part_2_result(file_name: &str) {
+    let instructions = load_data(file_name);
+
+    let grouped_instructions = split_instructions_by_inp(instructions);
+    let grouped_instructions = grouped_instructions
+        .iter()
+        .map(|instructions| instructions.as_slice())
+        .collect::<Vec<_>>();
+    let result = calculate_number(
+        ArithmeticLogicUnit::new(),
+        grouped_instructions.as_slice(),
+        0,
+        &(1..=9),
+        &mut HashSet::new(),
+    );
+
+    println!("Part 2. Result: {:?}", result);
+}
+
 fn main() {
     const DATA_FILENAME: &str = "./resources/data.txt";
     part_1_result(DATA_FILENAME);
+    part_2_result(DATA_FILENAME);
 }
 
 #[cfg(test)]
